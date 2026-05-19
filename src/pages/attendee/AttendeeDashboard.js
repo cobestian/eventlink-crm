@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/common/Navbar'
 import NotificationBell from '../../components/common/NotificationBell'
+import StreakCelebration from '../../components/common/StreakCelebration'
+import StreakReminderBanner from '../../components/common/StreakReminderBanner'
 import { useAuth } from '../../context/AuthContext'
 import { getAttendeeRsvps, getEvents } from '../../services/eventService'
 import { getUserGamification, updateStreak } from '../../services/gamificationService'
-import { formatDate, getCountdown } from '../../utils/helpers'
+import { formatDate } from '../../utils/helpers'
 
 const AttendeeDashboard = () => {
   const { profile } = useAuth()
@@ -14,12 +16,10 @@ const AttendeeDashboard = () => {
   const [allEvents, setAllEvents] = useState([])
   const [gamification, setGamification] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showCelebration, setShowCelebration] = useState(false)
+  const [newStreak, setNewStreak] = useState(0)
 
-  useEffect(() => {
-    if (profile) loadData()
-  }, [profile])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [r, g, e] = await Promise.all([
         getAttendeeRsvps(profile.id),
@@ -29,13 +29,25 @@ const AttendeeDashboard = () => {
       setRsvps(r || [])
       setGamification(g)
       setAllEvents(e || [])
-      await updateStreak(profile.id)
+
+      const today = new Date().toISOString().split('T')[0]
+      const lastActivity = g?.last_activity
+
+      if (lastActivity !== today) {
+        const updatedStreak = await updateStreak(profile.id)
+        setNewStreak(updatedStreak)
+        if (updatedStreak >= 1) setShowCelebration(true)
+      }
     } catch (err) {
       console.error(err)
     } finally {
       setLoading(false)
     }
-  }
+  }, [profile])
+
+  useEffect(() => {
+    if (profile) loadData()
+  }, [profile, loadData])
 
   const upcoming = rsvps.filter(r =>
     r.events?.status === 'published' && new Date(r.events?.event_date) > new Date()
@@ -50,6 +62,13 @@ const AttendeeDashboard = () => {
 
   return (
     <div className="app-shell">
+      {showCelebration && newStreak > 0 && (
+        <StreakCelebration
+          streak={newStreak}
+          onClose={() => setShowCelebration(false)}
+        />
+      )}
+
       <div className="app-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, position: 'relative', zIndex: 1 }}>
           <div>
@@ -71,11 +90,17 @@ const AttendeeDashboard = () => {
       </div>
 
       <div className="page-body">
+        <StreakReminderBanner
+          streak={gamification?.streak || 0}
+          lastActivity={gamification?.last_activity}
+        />
+
         {upcoming.length > 0 && (
           <div style={{ marginBottom: 20 }}>
             <div className="section-header">
               <h2>Featured Events</h2>
-              <span onClick={() => navigate('/attendee/events')} style={{ fontSize: 13, color: '#6C3FF5', fontWeight: 600, cursor: 'pointer' }}>See all</span>
+              <span onClick={() => navigate('/attendee/events')}
+                style={{ fontSize: 13, color: '#6C3FF5', fontWeight: 600, cursor: 'pointer' }}>See all</span>
             </div>
             <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
               {upcoming.slice(0, 4).map((rsvp, i) => (
@@ -111,7 +136,7 @@ const AttendeeDashboard = () => {
           <div className="grid-3" style={{ gap: 10 }}>
             {[
               { label: 'My Events', sub: `${rsvps.length} registered`, icon: '📅', gradient: 'linear-gradient(135deg, #6C3FF5, #9B59B6)', path: '/attendee/tickets' },
-              { label: 'Saved', sub: 'Your favorites', icon: '🔖', gradient: 'linear-gradient(135deg, #FF6B6B, #F59E0B)', path: '/attendee/events' },
+              { label: 'Browse', sub: 'Find events', icon: '🔖', gradient: 'linear-gradient(135deg, #FF6B6B, #F59E0B)', path: '/attendee/events' },
               { label: 'Badges', sub: `${gamification?.badges?.length || 0} earned`, icon: '⭐', gradient: 'linear-gradient(135deg, #00C896, #6C3FF5)', path: '/attendee/badges' },
             ].map(action => (
               <button key={action.label} onClick={() => navigate(action.path)}
@@ -131,32 +156,36 @@ const AttendeeDashboard = () => {
         <div>
           <div className="section-header">
             <h2>Events Near You</h2>
-            <span onClick={() => navigate('/attendee/events')} style={{ fontSize: 13, color: '#6C3FF5', fontWeight: 600, cursor: 'pointer' }}>See all</span>
+            <span onClick={() => navigate('/attendee/events')}
+              style={{ fontSize: 13, color: '#6C3FF5', fontWeight: 600, cursor: 'pointer' }}>See all</span>
           </div>
-          {loading ? <p style={{ color: '#9CA3AF', textAlign: 'center', padding: 20 }}>Loading...</p> :
-            allEvents.length === 0 ? (
-              <div className="card">
-                <div className="empty-state">
-                  <div className="empty-icon">🎉</div>
-                  <h3>No events yet</h3>
-                  <p>Check back soon for upcoming events</p>
-                </div>
+          {loading ? (
+            <p style={{ color: '#9CA3AF', textAlign: 'center', padding: 20 }}>Loading...</p>
+          ) : allEvents.length === 0 ? (
+            <div className="card">
+              <div className="empty-state">
+                <div className="empty-icon">🎉</div>
+                <h3>No events yet</h3>
+                <p>Check back soon for upcoming events</p>
               </div>
-            ) : allEvents.slice(0, 5).map((event, i) => (
-              <div key={event.id} className="card" style={{ marginBottom: 10, display: 'flex', gap: 12, alignItems: 'center' }}>
-                <div style={{
-                  width: 60, height: 60, borderRadius: 12, flexShrink: 0,
-                  background: EVENT_GRADIENTS[i % EVENT_GRADIENTS.length],
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24
-                }}>🎪</div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontWeight: 700, fontSize: 14 }}>{event.title}</p>
-                  <p style={{ fontSize: 12, color: '#6B7280', marginTop: 3 }}>📅 {formatDate(event.event_date)}</p>
-                  <p style={{ fontSize: 12, color: '#6B7280' }}>📍 {event.venue}</p>
-                </div>
-                <span style={{ fontSize: 18, color: '#9CA3AF' }}>›</span>
+            </div>
+          ) : allEvents.slice(0, 5).map((event, i) => (
+            <div key={event.id} className="card"
+              style={{ marginBottom: 10, display: 'flex', gap: 12, alignItems: 'center', cursor: 'pointer' }}
+              onClick={() => navigate('/attendee/events')}>
+              <div style={{
+                width: 60, height: 60, borderRadius: 12, flexShrink: 0,
+                background: EVENT_GRADIENTS[i % EVENT_GRADIENTS.length],
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24
+              }}>🎪</div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 700, fontSize: 14 }}>{event.title}</p>
+                <p style={{ fontSize: 12, color: '#6B7280', marginTop: 3 }}>📅 {formatDate(event.event_date)}</p>
+                <p style={{ fontSize: 12, color: '#6B7280' }}>📍 {event.venue}</p>
               </div>
-            ))}
+              <span style={{ fontSize: 18, color: '#9CA3AF' }}>›</span>
+            </div>
+          ))}
         </div>
       </div>
       <Navbar />

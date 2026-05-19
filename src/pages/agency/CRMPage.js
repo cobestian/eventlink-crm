@@ -121,15 +121,34 @@ const CRMPage = () => {
                 </div>
               </div>
 
-              {org.daysSince > 7 && (
-                <div style={{
-                  background: '#FFF7ED', borderRadius: 10, padding: '10px 12px',
-                  marginBottom: 12, fontSize: 12, color: '#92400E',
-                  border: '1px solid #FED7AA'
-                }}>
-                  ⚠️ No contact in {org.daysSince} days — send a follow-up to maintain your streak!
-                </div>
-              )}
+              {org.daysSince >= 3 && (
+  <div style={{
+    background: org.daysSince > 7 ? '#FEE2E2' : '#FEF3C7',
+    borderRadius: 12, padding: '12px 14px', marginBottom: 12,
+    border: `1px solid ${org.daysSince > 7 ? '#FECACA' : '#FDE68A'}`,
+    display: 'flex', alignItems: 'flex-start', gap: 10
+  }}>
+    <span style={{ fontSize: 20, flexShrink: 0 }}>
+      {org.daysSince > 7 ? '🚨' : '⚠️'}
+    </span>
+    <div>
+      <p style={{
+        fontSize: 13, fontWeight: 700,
+        color: org.daysSince > 7 ? '#991B1B' : '#92400E',
+        marginBottom: 3
+      }}>
+        {org.daysSince > 7
+          ? `Relationship at risk! No contact in ${org.daysSince} days`
+          : `Follow up soon — ${org.daysSince} days since last contact`}
+      </p>
+      <p style={{ fontSize: 12, color: '#6B7280' }}>
+        {org.daysSince > 7
+          ? '🔥 Your streak with this organizer may break. Send a message now!'
+          : '💬 A quick check-in keeps the relationship strong and your streak alive.'}
+      </p>
+    </div>
+  </div>
+)}
 
               <button className="btn-primary" onClick={() => setSelected(org)}>
                 Send Follow-up 💬

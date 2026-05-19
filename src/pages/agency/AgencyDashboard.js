@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/common/Navbar'
 import NotificationBell from '../../components/common/NotificationBell'
+import StreakCelebration from '../../components/common/StreakCelebration'
+import StreakReminderBanner from '../../components/common/StreakReminderBanner'
 import { useAuth } from '../../context/AuthContext'
 import { getAgencyBookings } from '../../services/bookingService'
 import { getUserGamification, updateStreak } from '../../services/gamificationService'
@@ -13,12 +15,10 @@ const AgencyDashboard = () => {
   const [bookings, setBookings] = useState([])
   const [gamification, setGamification] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showCelebration, setShowCelebration] = useState(false)
+  const [newStreak, setNewStreak] = useState(0)
 
-  useEffect(() => {
-    if (profile) loadData()
-  }, [profile])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [b, g] = await Promise.all([
         getAgencyBookings(profile.id),
@@ -26,19 +26,38 @@ const AgencyDashboard = () => {
       ])
       setBookings(b || [])
       setGamification(g)
-      await updateStreak(profile.id)
+
+      const today = new Date().toISOString().split('T')[0]
+      const lastActivity = g?.last_activity
+
+      if (lastActivity !== today) {
+        const updatedStreak = await updateStreak(profile.id)
+        setNewStreak(updatedStreak)
+        if (updatedStreak >= 1) setShowCelebration(true)
+      }
     } catch (err) {
       console.error(err)
     } finally {
       setLoading(false)
     }
-  }
+  }, [profile])
+
+  useEffect(() => {
+    if (profile) loadData()
+  }, [profile, loadData])
 
   const pending = bookings.filter(b => b.status === 'pending').length
   const accepted = bookings.filter(b => b.status === 'accepted').length
 
   return (
     <div className="app-shell">
+      {showCelebration && newStreak > 0 && (
+        <StreakCelebration
+          streak={newStreak}
+          onClose={() => setShowCelebration(false)}
+        />
+      )}
+
       <div className="app-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, position: 'relative', zIndex: 1 }}>
           <div>
@@ -71,6 +90,11 @@ const AgencyDashboard = () => {
       </div>
 
       <div className="page-body">
+        <StreakReminderBanner
+          streak={gamification?.streak || 0}
+          lastActivity={gamification?.last_activity}
+        />
+
         {gamification?.badges?.length > 0 && (
           <div style={{ marginBottom: 20 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>🏆 Your Badges</h2>
@@ -124,35 +148,35 @@ const AgencyDashboard = () => {
         <div>
           <div className="section-header">
             <h2>Recent Bookings</h2>
-            <span onClick={() => navigate('/agency/bookings')} style={{ fontSize: 13, color: '#6C3FF5', fontWeight: 600, cursor: 'pointer' }}>See all</span>
+            <span onClick={() => navigate('/agency/bookings')}
+              style={{ fontSize: 13, color: '#6C3FF5', fontWeight: 600, cursor: 'pointer' }}>See all</span>
           </div>
-          {loading ? <p style={{ color: '#9CA3AF', textAlign: 'center', padding: 20 }}>Loading...</p> :
-            bookings.length === 0 ? (
-              <div className="card">
-                <div className="empty-state">
-                  <div className="empty-icon">📋</div>
-                  <h3>No bookings yet</h3>
-                  <p>Booking requests will appear here</p>
-                </div>
+          {loading ? (
+            <p style={{ color: '#9CA3AF', textAlign: 'center', padding: 20 }}>Loading...</p>
+          ) : bookings.length === 0 ? (
+            <div className="card">
+              <div className="empty-state">
+                <div className="empty-icon">📋</div>
+                <h3>No bookings yet</h3>
+                <p>Booking requests will appear here</p>
               </div>
-            ) : bookings.slice(0, 3).map(booking => (
-              <div key={booking.id} className="card" style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontWeight: 700, fontSize: 15 }}>
-                      {booking.profiles?.organization_name || booking.profiles?.full_name}
-                    </p>
-                    <p style={{ fontSize: 13, color: '#6B7280', marginTop: 4 }}>
-                      📅 {booking.events?.title}
-                    </p>
-                    <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
-                      {formatDate(booking.events?.event_date)}
-                    </p>
-                  </div>
-                  <span className={`badge badge-${booking.status}`}>{booking.status}</span>
+            </div>
+          ) : bookings.slice(0, 3).map(booking => (
+            <div key={booking.id} className="card" style={{ marginBottom: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 700, fontSize: 15 }}>
+                    {booking.profiles?.organization_name || booking.profiles?.full_name}
+                  </p>
+                  <p style={{ fontSize: 13, color: '#6B7280', marginTop: 4 }}>📅 {booking.events?.title}</p>
+                  <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
+                    {formatDate(booking.events?.event_date)}
+                  </p>
                 </div>
+                <span className={`badge badge-${booking.status}`}>{booking.status}</span>
               </div>
-            ))}
+            </div>
+          ))}
         </div>
 
         <div style={{ marginTop: 20 }}>
@@ -163,7 +187,9 @@ const AgencyDashboard = () => {
             <p style={{ fontSize: 40, marginBottom: 8 }}>🔥</p>
             <p style={{ fontSize: 32, fontWeight: 800 }}>{gamification?.streak || 0} Day Streak</p>
             <p style={{ opacity: 0.8, fontSize: 13, marginTop: 6 }}>
-              {gamification?.streak === 0 ? 'Start your streak today!' : 'Keep it up! Come back tomorrow.'}
+              {gamification?.streak === 0
+                ? 'Start your streak today!'
+                : 'Keep it up! Come back tomorrow.'}
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 16 }}>
               <div>
