@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import Navbar from '../../components/common/Navbar'
 import { useAuth } from '../../context/AuthContext'
 import { getEvents, rsvpEvent, getAttendeeRsvps } from '../../services/eventService'
 import { addPoints, awardBadge } from '../../services/gamificationService'
+import { initializePayment, savePayment, hasPayedForEvent } from '../../services/paymentService'
 import { formatDate, formatTime, getCountdown } from '../../utils/helpers'
 import toast from 'react-hot-toast'
 
@@ -17,28 +18,39 @@ const BrowseEvents = () => {
   const { profile } = useAuth()
   const [events, setEvents] = useState([])
   const [myRsvps, setMyRsvps] = useState([])
+  const [paidEvents, setPaidEvents] = useState({})
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [registering, setRegistering] = useState(null)
+  const [processing, setProcessing] = useState(null)
 
-  useEffect(() => {
-    if (profile) loadData()
-  }, [profile])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [e, r] = await Promise.all([getEvents(), getAttendeeRsvps(profile.id)])
       setEvents(e || [])
       setMyRsvps(r || [])
+
+      // check which paid events this attendee has paid for
+      const paidMap = {}
+      for (const event of (e || [])) {
+        if (event.price > 0) {
+          const paid = await hasPayedForEvent(profile.id, event.id)
+          paidMap[event.id] = paid
+        }
+      }
+      setPaidEvents(paidMap)
     } catch (err) {
       toast.error('Failed to load events')
     } finally {
       setLoading(false)
     }
-  }
+  }, [profile])
 
-  const handleRsvp = async (eventId) => {
-    setRegistering(eventId)
+  useEffect(() => {
+    if (profile) loadData()
+  }, [profile, loadData])
+
+  const handleFreeRsvp = async (eventId) => {
+    setProcessing(eventId)
     try {
       await rsvpEvent(profile.id, eventId)
       await addPoints(profile.id, 10)
@@ -49,7 +61,42 @@ const BrowseEvents = () => {
       if (err.message?.includes('duplicate')) toast.error('Already registered')
       else toast.error(err.message || 'Registration failed')
     } finally {
-      setRegistering(null)
+      setProcessing(null)
+    }
+  }
+
+  const handlePaidRsvp = async (event) => {
+    setProcessing(event.id)
+    try {
+      initializePayment({
+        email: profile.email,
+        amount: event.price,
+        eventTitle: event.title,
+        onSuccess: async (reference) => {
+          try {
+            await savePayment({
+              attendeeId: profile.id,
+              eventId: event.id,
+              amount: event.price,
+              reference
+            })
+            await rsvpEvent(profile.id, event.id)
+            await addPoints(profile.id, 20)
+            await awardBadge(profile.id, 'first_rsvp')
+            toast.success('Payment successful! Ticket confirmed 🎉')
+            loadData()
+          } catch (err) {
+            toast.error('Payment saved but registration failed. Contact support.')
+          }
+        },
+        onClose: () => {
+          toast('Payment cancelled')
+          setProcessing(null)
+        }
+      })
+    } catch (err) {
+      toast.error('Payment failed. Try again.')
+      setProcessing(null)
     }
   }
 
@@ -102,7 +149,18 @@ const BrowseEvents = () => {
                 background: 'rgba(0,0,0,0.4)', borderRadius: 8,
                 padding: '3px 10px', fontSize: 11, color: 'white', fontWeight: 700
               }}>EVENT</div>
+
+              {/* Price tag */}
+              <div style={{
+                position: 'absolute', top: 10, right: 10,
+                background: event.price > 0 ? '#FF6B6B' : '#00C896',
+                borderRadius: 20, padding: '4px 12px',
+                fontSize: 12, color: 'white', fontWeight: 800
+              }}>
+                {event.price > 0 ? `GHS ${event.price}` : 'FREE'}
+              </div>
             </div>
+
             <div className="event-card-body">
               <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{event.title}</h3>
               <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 4 }}>📍 {event.venue}</p>
@@ -110,29 +168,64 @@ const BrowseEvents = () => {
                 📅 {formatDate(event.event_date)} at {formatTime(event.event_date)}
               </p>
               <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 8 }}>👥 Max {event.max_attendees}</p>
+
               {event.description && (
                 <p style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 10, lineHeight: 1.5 }}>
                   {event.description?.substring(0, 80)}{event.description?.length > 80 ? '...' : ''}
                 </p>
               )}
+
               <div style={{
-                display: 'inline-block', padding: '4px 12px', borderRadius: 20,
-                background: '#EDE9FE', color: '#6C3FF5', fontSize: 12, fontWeight: 700, marginBottom: 14
-              }}>⏰ {getCountdown(event.event_date)}</div>
+                display: 'flex', justifyContent: 'space-between',
+                alignItems: 'center', marginBottom: 14
+              }}>
+                <div style={{
+                  display: 'inline-block', padding: '4px 12px', borderRadius: 20,
+                  background: '#EDE9FE', color: '#6C3FF5', fontSize: 12, fontWeight: 700
+                }}>⏰ {getCountdown(event.event_date)}</div>
+
+                {event.price > 0 && (
+                  <div style={{
+                    padding: '4px 12px', borderRadius: 20,
+                    background: '#FEE2E2', color: '#FF6B6B',
+                    fontSize: 13, fontWeight: 800
+                  }}>GHS {event.price}</div>
+                )}
+              </div>
+
               <p style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 12 }}>
                 By {event.profiles?.organization_name || event.profiles?.full_name}
               </p>
+
               {isRegistered(event.id) ? (
                 <div style={{
                   padding: '12px', borderRadius: 12, background: '#D1FAE5',
                   textAlign: 'center', color: '#065F46', fontWeight: 700, fontSize: 14
                 }}>✅ Registered</div>
+              ) : event.price > 0 ? (
+                <div>
+                  {paidEvents[event.id] ? (
+                    <div style={{
+                      padding: '12px', borderRadius: 12, background: '#D1FAE5',
+                      textAlign: 'center', color: '#065F46', fontWeight: 700
+                    }}>✅ Payment confirmed</div>
+                  ) : (
+                    <button
+                      className="btn-primary"
+                      style={{ background: 'linear-gradient(135deg, #FF6B6B, #F59E0B)' }}
+                      disabled={processing === event.id}
+                      onClick={() => handlePaidRsvp(event)}>
+                      {processing === event.id ? 'Processing...' : `Pay GHS ${event.price} & Register 💳`}
+                    </button>
+                  )}
+                </div>
               ) : (
-                <button className="btn-primary"
+                <button
+                  className="btn-primary"
                   style={{ background: GRADIENTS[i % GRADIENTS.length] }}
-                  disabled={registering === event.id}
-                  onClick={() => handleRsvp(event.id)}>
-                  {registering === event.id ? 'Registering...' : 'Register Now →'}
+                  disabled={processing === event.id}
+                  onClick={() => handleFreeRsvp(event.id)}>
+                  {processing === event.id ? 'Registering...' : 'Register Free →'}
                 </button>
               )}
             </div>
