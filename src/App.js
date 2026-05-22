@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import './styles/global.css'
 
 import ProfilePage from './pages/ProfilePage'
+import ResetPassword from './pages/auth/ResetPassword'
 
 import Welcome from './pages/auth/Welcome'
 import Login from './pages/auth/Login'
@@ -65,6 +66,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/role-home" element={<RoleRouter />} />
 
           <Route path="/organizer/dashboard" element={<ProtectedRoute allowedRole="organizer"><OrganizerDashboard /></ProtectedRoute>} />
