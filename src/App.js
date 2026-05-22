@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import './styles/global.css'
-
+import Announcements from './pages/organizer/Announcements'
 import ProfilePage from './pages/ProfilePage'
 import ResetPassword from './pages/auth/ResetPassword'
 
@@ -75,6 +75,7 @@ function App() {
           <Route path="/organizer/hire-agency" element={<ProtectedRoute allowedRole="organizer"><HireAgency /></ProtectedRoute>} />
           <Route path="/organizer/attendees" element={<ProtectedRoute allowedRole="organizer"><AttendeeList /></ProtectedRoute>} />
           <Route path="/organizer/messages" element={<ProtectedRoute allowedRole="organizer"><OrganizerMessages /></ProtectedRoute>} />
+          <Route path="/organizer/announcements" element={<ProtectedRoute allowedRole="organizer"><Announcements /></ProtectedRoute>} />
 
           <Route path="/agency/dashboard" element={<ProtectedRoute allowedRole="agency"><AgencyDashboard /></ProtectedRoute>} />
           <Route path="/agency/bookings" element={<ProtectedRoute allowedRole="agency"><BookingRequests /></ProtectedRoute>} />

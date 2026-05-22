@@ -15,12 +15,12 @@ const Navbar = () => {
   const getNavItems = () => {
   switch (profile?.role) {
     case 'organizer': return [
-      { icon: '🏠', label: 'Home', path: '/organizer/dashboard' },
-      { icon: '📅', label: 'Events', path: '/organizer/events' },
-      { icon: '👔', label: 'Agencies', path: '/organizer/hire-agency' },
-      { icon: '👥', label: 'Attendees', path: '/organizer/attendees' },
-      { icon: '👤', label: 'Profile', path: '/profile' },
-    ]
+  { icon: '🏠', label: 'Home', path: '/organizer/dashboard' },
+  { icon: '📅', label: 'Events', path: '/organizer/events' },
+  { icon: '👔', label: 'Agencies', path: '/organizer/hire-agency' },
+  { icon: '📢', label: 'Announce', path: '/organizer/announcements' },
+  { icon: '👤', label: 'Profile', path: '/profile' },
+]
     case 'agency': return [
       { icon: '🏠', label: 'Home', path: '/agency/dashboard' },
       { icon: '📋', label: 'Bookings', path: '/agency/bookings' },
