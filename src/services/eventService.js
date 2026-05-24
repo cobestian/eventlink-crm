@@ -29,7 +29,7 @@ export const getEvents = async () => {
 export const getOrganizerEvents = async (organizerId) => {
   const { data, error } = await supabase
     .from('events')
-    .select('*')
+    .select('*, cover_url')
     .eq('organizer_id', organizerId)
     .order('created_at', { ascending: false })
   if (error) throw error
