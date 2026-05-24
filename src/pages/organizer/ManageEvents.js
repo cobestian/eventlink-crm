@@ -92,9 +92,22 @@ const ManageEvents = () => {
           </div>
         ) : filtered.map((event, i) => (
           <div key={event.id} className="event-card" style={{ marginBottom: 12 }}>
-            <div className="event-card-image" style={{ background: GRADIENTS[i % GRADIENTS.length], height: 100 }}>
-              <span style={{ fontSize: 36 }}>🎪</span>
-            </div>
+            <div style={{
+  height: 100, borderRadius: '16px 16px 0 0', overflow: 'hidden',
+  background: GRADIENTS[i % GRADIENTS.length],
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  position: 'relative'
+}}>
+  {event.cover_url ? (
+    <img src={event.cover_url} alt={event.title}
+      style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+  ) : (
+    <div style={{
+      width: '100%', height: '100%',
+      background: GRADIENTS[i % GRADIENTS.length]
+    }} />
+  )}
+</div>
             <div className="event-card-body">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                 <h3 style={{ fontSize: 15, fontWeight: 700, flex: 1, marginRight: 8 }}>{event.title}</h3>

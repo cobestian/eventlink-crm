@@ -143,7 +143,10 @@ const BrowseEvents = () => {
         ) : filtered.map((event, i) => (
           <div key={event.id} className="event-card" style={{ marginBottom: 16 }}>
             <div className="event-card-image" style={{ background: GRADIENTS[i % GRADIENTS.length] }}>
-              <span style={{ fontSize: 48 }}>🎪</span>
+  {event.cover_url ? (
+    <img src={event.cover_url} alt={event.title}
+      style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
+  ) : null}
               <div style={{
                 position: 'absolute', bottom: 10, left: 10,
                 background: 'rgba(0,0,0,0.4)', borderRadius: 8,

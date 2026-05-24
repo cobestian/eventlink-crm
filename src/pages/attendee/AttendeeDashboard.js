@@ -109,11 +109,14 @@ const AttendeeDashboard = () => {
                   boxShadow: '0 4px 16px rgba(0,0,0,0.12)', flexShrink: 0
                 }}>
                   <div style={{
-                    height: 120, background: EVENT_GRADIENTS[i % EVENT_GRADIENTS.length],
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 40, position: 'relative'
-                  }}>
-                    🎪
+  height: 120, background: EVENT_GRADIENTS[i % EVENT_GRADIENTS.length],
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  fontSize: 40, position: 'relative', overflow: 'hidden'
+}}>
+  {event.cover_url ? (
+    <img src={event.cover_url} alt={event.title}
+      style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
+  ) : null}
                     <div style={{
                       position: 'absolute', bottom: 8, left: 8,
                       background: 'rgba(0,0,0,0.5)', borderRadius: 8,
