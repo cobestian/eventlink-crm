@@ -92,21 +92,32 @@ const ManageEvents = () => {
           </div>
         ) : filtered.map((event, i) => (
           <div key={event.id} className="event-card" style={{ marginBottom: 12 }}>
-            <div style={{
-  height: 100, borderRadius: '16px 16px 0 0', overflow: 'hidden',
+           <div style={{
+  height: 140,
+  position: 'relative',
+  overflow: 'hidden',
   background: GRADIENTS[i % GRADIENTS.length],
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  position: 'relative'
 }}>
   {event.cover_url ? (
-    <img src={event.cover_url} alt={event.title}
-      style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-  ) : (
-    <div style={{
-      width: '100%', height: '100%',
-      background: GRADIENTS[i % GRADIENTS.length]
-    }} />
-  )}
+    <img
+      src={event.cover_url}
+      alt={event.title}
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        display: 'block',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0
+      }}
+      onError={(e) => {
+        e.target.style.display = 'none'
+      }}
+    />
+  ) : null}
 </div>
             <div className="event-card-body">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
