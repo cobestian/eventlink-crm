@@ -172,22 +172,47 @@ const AttendeeDashboard = () => {
                 <p>Check back soon for upcoming events</p>
               </div>
             </div>
-          ) : allEvents.slice(0, 5).map((event, i) => (
-            <div key={event.id} className="card"
-              style={{ marginBottom: 10, display: 'flex', gap: 12, alignItems: 'center', cursor: 'pointer' }}
-              onClick={() => navigate('/attendee/events')}>
-              <div style={{
-                width: 60, height: 60, borderRadius: 12, flexShrink: 0,
-                background: EVENT_GRADIENTS[i % EVENT_GRADIENTS.length],
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24
-              }}>🎪</div>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: 700, fontSize: 14 }}>{event.title}</p>
-                <p style={{ fontSize: 12, color: '#6B7280', marginTop: 3 }}>📅 {formatDate(event.event_date)}</p>
-                <p style={{ fontSize: 12, color: '#6B7280' }}>📍 {event.venue}</p>
-              </div>
-              <span style={{ fontSize: 18, color: '#9CA3AF' }}>›</span>
-            </div>
+          )  : allEvents.slice(0, 5).map((evt, i) => (
+
+  <div key={evt.id} className="card"
+
+    style={{ marginBottom: 10, display: 'flex', gap: 12, alignItems: 'center', cursor: 'pointer' }}
+
+    onClick={() => navigate('/attendee/events')}>
+
+  <div style={{
+
+    width: 60, height: 60, borderRadius: 12, flexShrink: 0,
+
+    background: EVENT_GRADIENTS[i % EVENT_GRADIENTS.length],
+
+    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24
+
+  }}>
+
+    {evt.cover_url ? (
+
+      <img src={evt.cover_url} alt={evt.title}
+
+        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} />
+
+    ) : null}
+
+  </div>
+
+  <div style={{ flex: 1 }}>
+
+    <p style={{ fontWeight: 700, fontSize: 14 }}>{evt.title}</p>
+
+    <p style={{ fontSize: 12, color: '#6B7280', marginTop: 3 }}>📅 {formatDate(evt.event_date)}</p>
+
+    <p style={{ fontSize: 12, color: '#6B7280' }}>📍 {evt.venue}</p>
+
+  </div>
+
+  <span style={{ fontSize: 18, color: '#9CA3AF' }}>›</span>
+
+</div>
           ))}
         </div>
       </div>
