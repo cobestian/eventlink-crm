@@ -34,7 +34,12 @@ const OrganizerDashboard = () => {
 
   const upcoming = events.filter(e => e.status === 'published' && new Date(e.event_date) > new Date())
 
-  const EVENT_EMOJIS = ['🎪', '🎵', '🎭', '🎨', '🏆', '🎊', '🌟', '🎤']
+  const GRADIENTS = [
+    'linear-gradient(135deg, #6C3FF5, #9B59B6)',
+    'linear-gradient(135deg, #FF6B6B, #F59E0B)',
+    'linear-gradient(135deg, #00C896, #6C3FF5)',
+    'linear-gradient(135deg, #F59E0B, #FF6B6B)',
+  ]
 
   return (
     <div className="app-shell">
@@ -52,10 +57,10 @@ const OrganizerDashboard = () => {
 
         <div className="grid-2" style={{ position: 'relative', zIndex: 1 }}>
           {[
-            { label: 'TOTAL EVENTS', value: events.length, color: '#6C3FF5', bg: 'rgba(255,255,255,0.15)' },
-            { label: 'UPCOMING', value: upcoming.length, color: '#00C896', bg: 'rgba(0,200,150,0.2)' },
-            { label: 'BOOKINGS', value: bookings.length, color: '#F59E0B', bg: 'rgba(245,158,11,0.2)' },
-            { label: 'ATTENDEES', value: events.reduce((s, e) => s + (e.max_attendees || 0), 0), color: '#FF6B6B', bg: 'rgba(255,107,107,0.2)' },
+            { label: 'TOTAL EVENTS', value: events.length, bg: 'rgba(255,255,255,0.15)' },
+            { label: 'UPCOMING', value: upcoming.length, bg: 'rgba(0,200,150,0.2)' },
+            { label: 'BOOKINGS', value: bookings.length, bg: 'rgba(245,158,11,0.2)' },
+            { label: 'ATTENDEES', value: events.reduce((s, e) => s + (e.max_attendees || 0), 0), bg: 'rgba(255,107,107,0.2)' },
           ].map(s => (
             <div key={s.label} style={{
               background: s.bg, borderRadius: 14, padding: '14px',
@@ -95,7 +100,8 @@ const OrganizerDashboard = () => {
         <div>
           <div className="section-header">
             <h2>Recent Events</h2>
-            <span onClick={() => navigate('/organizer/events')} style={{ fontSize: 13, color: '#6C3FF5', fontWeight: 600, cursor: 'pointer' }}>See all</span>
+            <span onClick={() => navigate('/organizer/events')}
+              style={{ fontSize: 13, color: '#6C3FF5', fontWeight: 600, cursor: 'pointer' }}>See all</span>
           </div>
           {loading ? (
             <p style={{ color: '#9CA3AF', textAlign: 'center', padding: 20 }}>Loading...</p>
@@ -110,24 +116,32 @@ const OrganizerDashboard = () => {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {events.slice(0, 4).map((event, i) => (
-                <div key={event.id} className="event-card">
-                  <div className="event-card-image" style={{
-                    background: i % 2 === 0
-                      ? 'linear-gradient(135deg, #6C3FF5, #9B59B6)'
-                      : 'linear-gradient(135deg, #FF6B6B, #F59E0B)',
-                    height: 100
+                <div key={event.id} style={{
+                  background: 'white', borderRadius: 16, overflow: 'hidden',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: '1px solid #E8EAFF'
+                }}>
+                  {/* Event image */}
+                  <div style={{
+                    height: 120, position: 'relative', overflow: 'hidden',
+                    background: GRADIENTS[i % GRADIENTS.length]
                   }}>
-                    <span style={{ fontSize: 40 }}>{EVENT_EMOJIS[i % EVENT_EMOJIS.length]}</span>
+                    {event.cover_url ? (
+                      <img src={event.cover_url} alt={event.title}
+                        style={{
+                          width: '100%', height: '100%',
+                          objectFit: 'cover', display: 'block'
+                        }} />
+                    ) : null}
                   </div>
-                  <div className="event-card-body">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1 }}>
-                        <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{event.title}</h3>
-                        <p style={{ fontSize: 12, color: '#6B7280' }}>📍 {event.venue}</p>
-                        <p style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>📅 {formatDate(event.event_date)}</p>
-                      </div>
+
+                  {/* Event details */}
+                  <div style={{ padding: '12px 14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                      <h3 style={{ fontSize: 15, fontWeight: 700, flex: 1, marginRight: 8 }}>{event.title}</h3>
                       <span className={`badge badge-${event.status}`}>{event.status}</span>
                     </div>
+                    <p style={{ fontSize: 12, color: '#6B7280' }}>📍 {event.venue}</p>
+                    <p style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>📅 {formatDate(event.event_date)}</p>
                   </div>
                 </div>
               ))}

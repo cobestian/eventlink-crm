@@ -181,14 +181,10 @@ const AttendeeDashboard = () => {
     onClick={() => navigate('/attendee/events')}>
 
   <div style={{
-
-    width: 60, height: 60, borderRadius: 12, flexShrink: 0,
-
-    background: EVENT_GRADIENTS[i % EVENT_GRADIENTS.length],
-
-    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24
-
-  }}>
+  width: 60, height: 60, borderRadius: 12, flexShrink: 0,
+  background: EVENT_GRADIENTS[i % EVENT_GRADIENTS.length],
+  overflow: 'hidden'
+}}>
 
     {evt.cover_url ? (
 
