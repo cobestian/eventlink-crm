@@ -1,23 +1,53 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/common/Navbar'
 import { useAuth } from '../../context/AuthContext'
 import { createEvent } from '../../services/eventService'
+import { supabase } from '../../config/supabase'
 import toast from 'react-hot-toast'
 
 const CreateEvent = () => {
   const { profile } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState(null)
+  const fileRef = useRef()
   const [form, setForm] = useState({
-    title: '',
-    description: '',
-    venue: '',
-    event_date: '',
-    end_date: '',
-    max_attendees: 100,
-    price: 0
+    title: '', description: '', venue: '',
+    event_date: '', end_date: '', max_attendees: 100,
+    price: 0, cover_url: ''
   })
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be under 5MB')
+      return
+    }
+    setUploading(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const fileName = `${Date.now()}.${ext}`
+      const { error } = await supabase.storage
+        .from('event-images')
+        .upload(fileName, file)
+      if (error) throw error
+
+      const { data } = supabase.storage
+        .from('event-images')
+        .getPublicUrl(fileName)
+
+      setForm({ ...form, cover_url: data.publicUrl })
+      setPreviewUrl(data.publicUrl)
+      toast.success('Image uploaded!')
+    } catch (err) {
+      toast.error('Failed to upload image')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -56,81 +86,96 @@ const CreateEvent = () => {
         <div className="card">
           <form onSubmit={handleSubmit}>
 
+            {/* Image Upload */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>
+                Event Cover Image
+              </label>
+              <div
+                onClick={() => fileRef.current.click()}
+                style={{
+                  height: 160, borderRadius: 16, cursor: 'pointer',
+                  border: '2px dashed #C4B5FD',
+                  background: previewUrl ? 'transparent' : '#F8F9FF',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  overflow: 'hidden', position: 'relative'
+                }}>
+                {previewUrl ? (
+                  <img src={previewUrl} alt="cover"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: 36, marginBottom: 8 }}>🖼️</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#6C3FF5' }}>
+                      {uploading ? 'Uploading...' : 'Tap to upload image'}
+                    </p>
+                    <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>
+                      JPG, PNG, GIF — max 5MB
+                    </p>
+                  </div>
+                )}
+                {previewUrl && (
+                  <div style={{
+                    position: 'absolute', bottom: 8, right: 8,
+                    background: 'rgba(0,0,0,0.6)', borderRadius: 8,
+                    padding: '4px 10px', color: 'white', fontSize: 12, fontWeight: 600
+                  }}>Change</div>
+                )}
+              </div>
+              <input ref={fileRef} type="file" accept="image/*"
+                onChange={handleImageUpload} style={{ display: 'none' }} />
+            </div>
+
             <div className="input-group">
               <label>Event Title *</label>
-              <input
-                placeholder="e.g. Accra Business Summit 2025"
+              <input placeholder="e.g. Accra Business Summit 2025"
                 value={form.title}
-                onChange={e => setForm({ ...form, title: e.target.value })}
-                required
-              />
+                onChange={e => setForm({ ...form, title: e.target.value })} required />
             </div>
 
             <div className="input-group">
               <label>Description</label>
-              <textarea
-                rows={3}
-                placeholder="Describe your event..."
+              <textarea rows={3} placeholder="Describe your event..."
                 value={form.description}
                 onChange={e => setForm({ ...form, description: e.target.value })}
                 style={{
                   padding: '12px 16px', border: '1.5px solid #E8EAFF',
                   borderRadius: 12, fontSize: 14, resize: 'none',
                   width: '100%', background: '#F8F9FF'
-                }}
-              />
+                }} />
             </div>
 
             <div className="input-group">
               <label>Venue *</label>
-              <input
-                placeholder="e.g. Accra International Conference Centre"
+              <input placeholder="e.g. Accra International Conference Centre"
                 value={form.venue}
-                onChange={e => setForm({ ...form, venue: e.target.value })}
-                required
-              />
+                onChange={e => setForm({ ...form, venue: e.target.value })} required />
             </div>
 
             <div className="input-group">
               <label>Start Date & Time *</label>
-              <input
-                type="datetime-local"
-                value={form.event_date}
-                onChange={e => setForm({ ...form, event_date: e.target.value })}
-                required
-              />
+              <input type="datetime-local" value={form.event_date}
+                onChange={e => setForm({ ...form, event_date: e.target.value })} required />
             </div>
 
             <div className="input-group">
               <label>End Date & Time</label>
-              <input
-                type="datetime-local"
-                value={form.end_date}
-                onChange={e => setForm({ ...form, end_date: e.target.value })}
-              />
+              <input type="datetime-local" value={form.end_date}
+                onChange={e => setForm({ ...form, end_date: e.target.value })} />
             </div>
 
             <div className="input-group">
               <label>Maximum Attendees</label>
-              <input
-                type="number"
-                min={1}
-                value={form.max_attendees}
-                onChange={e => setForm({ ...form, max_attendees: parseInt(e.target.value) || 1 })}
-              />
+              <input type="number" min={1} value={form.max_attendees}
+                onChange={e => setForm({ ...form, max_attendees: parseInt(e.target.value) || 1 })} />
             </div>
 
             <div className="input-group">
               <label>Ticket Price (GHS) — set 0 for free event</label>
-              <input
-                type="number"
-                min={0}
-                placeholder="0"
-                value={form.price}
-                onChange={e => setForm({ ...form, price: parseFloat(e.target.value) || 0 })}
-              />
+              <input type="number" min={0} placeholder="0" value={form.price}
+                onChange={e => setForm({ ...form, price: parseFloat(e.target.value) || 0 })} />
               <span style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>
-                💡 Set to 0 for a free event. Attendees will pay via Paystack for paid events.
+                💡 Set to 0 for a free event.
               </span>
             </div>
 
@@ -139,21 +184,16 @@ const CreateEvent = () => {
               marginBottom: 16, border: '1px solid #E8EAFF'
             }}>
               <p style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.5 }}>
-                📋 <strong>Summary:</strong> {form.title || 'Your event'} at {form.venue || 'venue'} —{' '}
+                📋 <strong>Summary:</strong> {form.title || 'Your event'} at{' '}
+                {form.venue || 'venue'} —{' '}
                 {form.price > 0 ? `GHS ${form.price} per ticket` : 'Free entry'} —{' '}
                 max {form.max_attendees} attendees
               </p>
             </div>
 
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={loading}
-              style={{ marginTop: 8 }}
-            >
+            <button type="submit" className="btn-primary" disabled={loading || uploading}>
               {loading ? 'Creating...' : 'Create Event 🎉'}
             </button>
-
           </form>
         </div>
       </div>

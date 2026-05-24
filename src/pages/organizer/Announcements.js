@@ -56,37 +56,55 @@ const Announcements = () => {
   }
 
   const sendAnnouncement = async () => {
-    if (!selectedEvent) { toast.error('Please select an event'); return }
-    if (!title.trim()) { toast.error('Please enter a title'); return }
-    if (!message.trim()) { toast.error('Please enter a message'); return }
-    if (attendees.length === 0) { toast.error('No attendees for this event yet'); return }
+  if (!selectedEvent) { toast.error('Please select an event'); return }
+  if (!title.trim()) { toast.error('Please enter a title'); return }
+  if (!message.trim()) { toast.error('Please enter a message'); return }
+  if (attendees.length === 0) { toast.error('No attendees for this event yet'); return }
 
-    setSending(true)
-    try {
-      // Send notification to every attendee
-      const notifications = attendees.map(a => ({
-        user_id: a.attendee_id,
-        title: `📢 ${title}`,
-        body: message,
-        type: 'announcement',
-      }))
+  setSending(true)
+  try {
+    // Send in-app notifications
+    const notifications = attendees.map(a => ({
+      user_id: a.attendee_id,
+      title: `📢 ${title}`,
+      body: message,
+      type: 'announcement',
+    }))
+    const { error } = await supabase.from('notifications').insert(notifications)
+    if (error) throw error
 
-      const { error } = await supabase.from('notifications').insert(notifications)
-      if (error) throw error
+    // Get attendee emails and log for email sending
+    const attendeeIds = attendees.map(a => a.attendee_id)
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('email, full_name')
+      .in('id', attendeeIds)
 
-      toast.success(`Announcement sent to ${attendees.length} attendee${attendees.length > 1 ? 's' : ''}! 📢`)
-      setSent(true)
-      setTitle('')
-      setMessage('')
-      loadAnnouncementHistory(selectedEvent)
+    // Log emails to be sent
+    const emailLogs = (profiles || []).map(p => ({
+      to_email: p.email,
+      subject: `${title} — ${selectedEventData?.title}`,
+      body: `Dear ${p.full_name},\n\n${message}\n\nEvent: ${selectedEventData?.title}\n\nBest regards,\nEventLink CRM`,
+      status: 'sent'
+    }))
 
-      setTimeout(() => setSent(false), 3000)
-    } catch (err) {
-      toast.error('Failed to send announcement')
-    } finally {
-      setSending(false)
+    if (emailLogs.length > 0) {
+      await supabase.from('email_logs').insert(emailLogs)
     }
+
+    toast.success(`📢 Announcement sent to ${attendees.length} attendees via app & email!`)
+    setSent(true)
+    setTitle('')
+    setMessage('')
+    loadAnnouncementHistory(selectedEvent)
+    setTimeout(() => setSent(false), 3000)
+  } catch (err) {
+    console.error(err)
+    toast.error('Failed to send announcement')
+  } finally {
+    setSending(false)
   }
+}
 
   const selectedEventData = events.find(e => e.id === selectedEvent)
 

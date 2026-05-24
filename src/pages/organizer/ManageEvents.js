@@ -105,19 +105,28 @@ const ManageEvents = () => {
                 📅 {formatDate(event.event_date)} at {formatTime(event.event_date)}
               </p>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => navigate(`/organizer/attendees?event=${event.id}`)} style={{
-                  flex: 1, padding: '10px', borderRadius: 10,
-                  border: '1.5px solid #E8EAFF', background: '#F8F9FF',
-                  fontSize: 13, fontWeight: 700, color: '#6C3FF5', cursor: 'pointer'
-                }}>👥 Attendees</button>
-                {event.status !== 'cancelled' && (
-                  <button onClick={() => handleCancel(event.id)} style={{
-                    padding: '10px 16px', borderRadius: 10, border: 'none',
-                    background: '#FEE2E2', color: '#FF6B6B',
-                    fontSize: 13, fontWeight: 700, cursor: 'pointer'
-                  }}>Cancel</button>
-                )}
-              </div>
+  <button onClick={() => {
+    const link = `${window.location.origin}/attendee/events?join=${event.id}`
+    navigator.clipboard.writeText(link)
+    toast.success('Event link copied! 🔗')
+  }} style={{
+    padding: '10px 14px', borderRadius: 10,
+    border: '1.5px solid #E8EAFF', background: '#EDE9FE',
+    fontSize: 13, fontWeight: 700, color: '#6C3FF5', cursor: 'pointer'
+  }}>🔗 Share</button>
+  <button onClick={() => navigate(`/organizer/attendees?event=${event.id}`)} style={{
+    padding: '10px 16px', borderRadius: 10,
+    border: '1.5px solid #E8EAFF', background: '#F8F9FF',
+    fontSize: 13, fontWeight: 700, color: '#6C3FF5', cursor: 'pointer'
+  }}>👥 Attendees</button>
+  {event.status !== 'cancelled' && (
+    <button onClick={() => handleCancel(event.id)} style={{
+      padding: '10px 16px', borderRadius: 10, border: 'none',
+      background: '#FEE2E2', color: '#FF6B6B',
+      fontSize: 13, fontWeight: 700, cursor: 'pointer'
+    }}>Cancel</button>
+  )}
+</div>
             </div>
           </div>
         ))}
