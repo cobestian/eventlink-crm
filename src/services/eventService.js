@@ -92,6 +92,12 @@ export const checkInAttendee = async (rsvpId) => {
 }
 
 export const deleteEvent = async (eventId) => {
+  // Delete related records first
+  await supabase.from('rsvps').delete().eq('event_id', eventId)
+  await supabase.from('bookings').delete().eq('event_id', eventId)
+  await supabase.from('notifications').delete().eq('type', 'announcement')
+
+  // Then delete the event
   const { error } = await supabase
     .from('events')
     .delete()
