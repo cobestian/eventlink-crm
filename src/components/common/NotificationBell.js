@@ -66,7 +66,8 @@ const NotificationBell = () => {
         <div style={{
           width: 42, height: 42, borderRadius: 12, flexShrink: 0,
           backgroundColor: style.bg,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'center', fontSize: 20
         }}>{style.icon}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontWeight: 700, fontSize: 14, color: '#1A1A2E', marginBottom: 3 }}>
@@ -86,7 +87,6 @@ const NotificationBell = () => {
 
   return (
     <>
-      {/* Bell button */}
       <button onClick={() => { setOpen(true); setSelected(null) }} style={{
         position: 'relative',
         background: 'rgba(255,255,255,0.2)',
@@ -107,178 +107,152 @@ const NotificationBell = () => {
         )}
       </button>
 
-      {/* Full screen overlay for notification list */}
       {open && !selected && (
         <div style={{
           position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
+          top: 0, left: 0,
+          width: '100vw',
+          height: '100vh',
           zIndex: 99999,
+          backgroundColor: '#ffffff',
           display: 'flex',
-          alignItems: 'stretch',
-          justifyContent: 'center',
+          flexDirection: 'column',
+          overflow: 'hidden'
         }}>
-          {/* Dark backdrop */}
-          <div
-            onClick={() => setOpen(false)}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundColor: 'rgba(0,0,0,0.6)',
-              zIndex: 0
-            }}
-          />
-          {/* Panel */}
           <div style={{
-            position: 'relative',
-            zIndex: 1,
-            width: '100%',
-            maxWidth: 480,
-            backgroundColor: '#ffffff',
+            background: 'linear-gradient(135deg, #6C3FF5, #9B59B6)',
+            padding: '48px 20px 20px',
             display: 'flex',
-            flexDirection: 'column',
-            height: '100vh',
-            overflow: 'hidden'
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexShrink: 0
           }}>
-            {/* Header */}
-            <div style={{
-              background: 'linear-gradient(135deg, #6C3FF5, #9B59B6)',
-              padding: '48px 20px 20px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexShrink: 0
-            }}>
-              <div>
-                <h2 style={{ fontSize: 22, fontWeight: 800, color: 'white' }}>
-                  Notifications
-                </h2>
-                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>
-                  {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+            <div>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: 'white' }}>
+                Notifications
+              </h2>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>
+                {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              {unreadCount > 0 && (
+                <button onClick={handleMarkAllRead} style={{
+                  background: 'rgba(255,255,255,0.2)', border: 'none',
+                  color: 'white', fontSize: 12, fontWeight: 700,
+                  padding: '8px 14px', borderRadius: 10, cursor: 'pointer'
+                }}>Mark all read</button>
+              )}
+              <button onClick={() => setOpen(false)} style={{
+                background: 'rgba(255,255,255,0.2)', border: 'none',
+                color: 'white', borderRadius: 10, padding: '8px 14px',
+                cursor: 'pointer', fontSize: 18, fontWeight: 700
+              }}>✕</button>
+            </div>
+          </div>
+
+          <div style={{ flex: 1, overflowY: 'auto', backgroundColor: '#ffffff' }}>
+            {unread.length > 0 && (
+              <>
+                <p style={{
+                  padding: '12px 20px 6px', fontSize: 11,
+                  fontWeight: 700, color: '#9CA3AF',
+                  textTransform: 'uppercase', letterSpacing: 1,
+                  backgroundColor: '#F8F9FF'
+                }}>🔴 Unread ({unread.length})</p>
+                {unread.map(n => (
+                  <NotificationItem key={n.id} n={n} dimmed={false} />
+                ))}
+              </>
+            )}
+
+            {read.length > 0 && (
+              <>
+                <p style={{
+                  padding: '12px 20px 6px', fontSize: 11,
+                  fontWeight: 700, color: '#9CA3AF',
+                  textTransform: 'uppercase', letterSpacing: 1,
+                  backgroundColor: '#F8F9FF'
+                }}>✅ Read ({read.length})</p>
+                {read.map(n => (
+                  <NotificationItem key={n.id} n={n} dimmed={true} />
+                ))}
+              </>
+            )}
+
+            {notifications.length === 0 && (
+              <div style={{ padding: '80px 20px', textAlign: 'center' }}>
+                <p style={{ fontSize: 56, marginBottom: 16 }}>🔔</p>
+                <p style={{ fontWeight: 700, fontSize: 18, color: '#1A1A2E', marginBottom: 8 }}>
+                  No notifications yet
+                </p>
+                <p style={{ fontSize: 14, color: '#9CA3AF' }}>
+                  Event updates and announcements will appear here
                 </p>
               </div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                {unreadCount > 0 && (
-                  <button onClick={handleMarkAllRead} style={{
-                    background: 'rgba(255,255,255,0.2)', border: 'none',
-                    color: 'white', fontSize: 12, fontWeight: 700,
-                    padding: '8px 14px', borderRadius: 10, cursor: 'pointer'
-                  }}>Mark all read</button>
-                )}
-                <button onClick={() => setOpen(false)} style={{
-                  background: 'rgba(255,255,255,0.2)', border: 'none',
-                  color: 'white', borderRadius: 10, padding: '8px 14px',
-                  cursor: 'pointer', fontSize: 18, fontWeight: 700
-                }}>✕</button>
-              </div>
-            </div>
-
-            {/* Notification list */}
-            <div style={{ flex: 1, overflowY: 'auto', backgroundColor: '#ffffff' }}>
-              {unread.length > 0 && (
-                <>
-                  <p style={{
-                    padding: '12px 20px 6px', fontSize: 11,
-                    fontWeight: 700, color: '#9CA3AF',
-                    textTransform: 'uppercase', letterSpacing: 1,
-                    backgroundColor: '#F8F9FF'
-                  }}>🔴 Unread ({unread.length})</p>
-                  {unread.map(n => <NotificationItem key={n.id} n={n} dimmed={false} />)}
-                </>
-              )}
-
-              {read.length > 0 && (
-                <>
-                  <p style={{
-                    padding: '12px 20px 6px', fontSize: 11,
-                    fontWeight: 700, color: '#9CA3AF',
-                    textTransform: 'uppercase', letterSpacing: 1,
-                    backgroundColor: '#F8F9FF'
-                  }}>✅ Read ({read.length})</p>
-                  {read.map(n => <NotificationItem key={n.id} n={n} dimmed={true} />)}
-                </>
-              )}
-
-              {notifications.length === 0 && (
-                <div style={{ padding: '80px 20px', textAlign: 'center', backgroundColor: '#ffffff' }}>
-                  <p style={{ fontSize: 56, marginBottom: 16 }}>🔔</p>
-                  <p style={{ fontWeight: 700, fontSize: 18, color: '#1A1A2E', marginBottom: 8 }}>
-                    No notifications yet
-                  </p>
-                  <p style={{ fontSize: 14, color: '#9CA3AF' }}>
-                    Event updates and announcements will appear here
-                  </p>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Single notification full screen view */}
       {selected && (
         <div style={{
           position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
+          top: 0, left: 0,
+          width: '100vw',
+          height: '100vh',
           zIndex: 99999,
+          backgroundColor: '#ffffff',
           display: 'flex',
-          justifyContent: 'center'
+          flexDirection: 'column',
+          overflow: 'hidden'
         }}>
           <div style={{
-            width: '100%',
-            maxWidth: 480,
-            backgroundColor: '#ffffff',
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100vh',
-            overflow: 'hidden'
+            background: 'linear-gradient(135deg, #6C3FF5, #9B59B6)',
+            padding: '48px 20px 32px',
+            flexShrink: 0
           }}>
+            <button onClick={() => { setSelected(null); setOpen(true) }} style={{
+              background: 'rgba(255,255,255,0.2)', border: 'none',
+              color: 'white', borderRadius: 10, padding: '8px 14px',
+              cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: 20
+            }}>← Back</button>
+
             <div style={{
-              background: 'linear-gradient(135deg, #6C3FF5, #9B59B6)',
-              padding: '48px 20px 32px',
-              flexShrink: 0
+              width: 56, height: 56, borderRadius: 16,
+              background: 'rgba(255,255,255,0.2)',
+              display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontSize: 28, marginBottom: 14
             }}>
-              <button onClick={() => { setSelected(null); setOpen(true) }} style={{
-                background: 'rgba(255,255,255,0.2)', border: 'none',
-                color: 'white', borderRadius: 10, padding: '8px 14px',
-                cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: 20
-              }}>← Back</button>
+              {getTypeStyle(selected.type).icon}
+            </div>
 
-              <div style={{
-                width: 56, height: 56, borderRadius: 16,
-                background: 'rgba(255,255,255,0.2)',
-                display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontSize: 28, marginBottom: 14
-              }}>
-                {getTypeStyle(selected.type).icon}
-              </div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: 'white', lineHeight: 1.3 }}>
+              {selected.title}
+            </h2>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 6 }}>
+              {formatDistanceToNow(new Date(selected.created_at), { addSuffix: true })}
+            </p>
+          </div>
 
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: 'white', lineHeight: 1.3 }}>
-                {selected.title}
-              </h2>
-              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 6 }}>
-                {formatDistanceToNow(new Date(selected.created_at), { addSuffix: true })}
+          <div style={{ flex: 1, padding: '28px 20px', overflowY: 'auto', backgroundColor: '#ffffff' }}>
+            <div style={{
+              background: '#F8F9FF', borderRadius: 16, padding: '20px 18px',
+              border: '1px solid #E8EAFF', marginBottom: 20
+            }}>
+              <p style={{ fontSize: 16, color: '#1A1A2E', lineHeight: 1.8 }}>
+                {selected.body}
               </p>
             </div>
 
-            <div style={{ flex: 1, padding: '28px 20px', overflowY: 'auto', backgroundColor: '#ffffff' }}>
-              <div style={{
-                background: '#F8F9FF', borderRadius: 16, padding: '20px 18px',
-                border: '1px solid #E8EAFF', marginBottom: 20
-              }}>
-                <p style={{ fontSize: 16, color: '#1A1A2E', lineHeight: 1.8 }}>
-                  {selected.body}
-                </p>
-              </div>
-
-              <span style={{
-                display: 'inline-block', padding: '6px 14px', borderRadius: 20,
-                backgroundColor: getTypeStyle(selected.type).bg,
-                color: getTypeStyle(selected.type).color,
-                fontSize: 12, fontWeight: 700, textTransform: 'capitalize'
-              }}>
-                {selected.type?.replace(/_/g, ' ')}
-              </span>
-            </div>
+            <span style={{
+              display: 'inline-block', padding: '6px 14px', borderRadius: 20,
+              backgroundColor: getTypeStyle(selected.type).bg,
+              color: getTypeStyle(selected.type).color,
+              fontSize: 12, fontWeight: 700, textTransform: 'capitalize'
+            }}>
+              {selected.type?.replace(/_/g, ' ')}
+            </span>
           </div>
         </div>
       )}
