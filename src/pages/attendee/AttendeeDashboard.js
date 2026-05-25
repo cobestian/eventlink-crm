@@ -110,11 +110,10 @@ const AttendeeDashboard = () => {
                 }}>
                   <div style={{
   height: 120, background: EVENT_GRADIENTS[i % EVENT_GRADIENTS.length],
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  fontSize: 40, position: 'relative', overflow: 'hidden'
+  position: 'relative', overflow: 'hidden'
 }}>
-  {event.cover_url ? (
-    <img src={event.cover_url} alt={event.title}
+  {rsvp.events?.cover_url ? (
+    <img src={rsvp.events.cover_url} alt={rsvp.events?.title}
       style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
   ) : null}
                     <div style={{

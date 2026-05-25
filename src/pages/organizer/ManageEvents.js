@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/common/Navbar'
 import { useAuth } from '../../context/AuthContext'
 import { getOrganizerEvents, cancelEvent } from '../../services/eventService'
+import { getOrganizerEvents, cancelEvent, deleteEvent } from '../../services/eventService'
 import { formatDate, formatTime } from '../../utils/helpers'
 import toast from 'react-hot-toast'
 
@@ -38,6 +39,16 @@ const ManageEvents = () => {
       toast.error('Failed to cancel event')
     }
   }
+  const handleDelete = async (eventId) => {
+  if (!window.confirm('Permanently delete this event? This cannot be undone.')) return
+  try {
+    await deleteEvent(eventId)
+    toast.success('Event deleted')
+    loadEvents()
+  } catch (err) {
+    toast.error('Failed to delete event')
+  }
+}
 
   const filtered = filter === 'all' ? events : events.filter(e => e.status === filter)
 
@@ -128,7 +139,7 @@ const ManageEvents = () => {
               <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 12 }}>
                 📅 {formatDate(event.event_date)} at {formatTime(event.event_date)}
               </p>
-              <div style={{ display: 'flex', gap: 8 }}>
+             <div style={{ display: 'flex', gap: 8 }}>
   <button onClick={() => {
     const link = `${window.location.origin}/attendee/events?join=${event.id}`
     navigator.clipboard.writeText(link)
@@ -138,17 +149,27 @@ const ManageEvents = () => {
     border: '1.5px solid #E8EAFF', background: '#EDE9FE',
     fontSize: 13, fontWeight: 700, color: '#6C3FF5', cursor: 'pointer'
   }}>🔗 Share</button>
+
   <button onClick={() => navigate(`/organizer/attendees?event=${event.id}`)} style={{
-    padding: '10px 16px', borderRadius: 10,
+    flex: 1, padding: '10px', borderRadius: 10,
     border: '1.5px solid #E8EAFF', background: '#F8F9FF',
     fontSize: 13, fontWeight: 700, color: '#6C3FF5', cursor: 'pointer'
   }}>👥 Attendees</button>
+
   {event.status !== 'cancelled' && (
     <button onClick={() => handleCancel(event.id)} style={{
       padding: '10px 16px', borderRadius: 10, border: 'none',
       background: '#FEE2E2', color: '#FF6B6B',
       fontSize: 13, fontWeight: 700, cursor: 'pointer'
     }}>Cancel</button>
+  )}
+
+  {event.status === 'cancelled' && (
+    <button onClick={() => handleDelete(event.id)} style={{
+      padding: '10px 16px', borderRadius: 10, border: 'none',
+      background: '#1A1A2E', color: 'white',
+      fontSize: 13, fontWeight: 700, cursor: 'pointer'
+    }}>🗑️ Delete</button>
   )}
 </div>
             </div>

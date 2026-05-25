@@ -90,3 +90,11 @@ export const checkInAttendee = async (rsvpId) => {
     .eq('id', rsvpId)
   if (error) throw error
 }
+
+export const deleteEvent = async (eventId) => {
+  const { error } = await supabase
+    .from('events')
+    .delete()
+    .eq('id', eventId)
+  if (error) throw error
+}
