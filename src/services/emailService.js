@@ -132,3 +132,89 @@ export const sendRsvpConfirmationEmail = async ({ email, name, eventTitle, event
     `
   })
 }
+export const sendLoginWelcomeEmail = async ({ email, fullName, role }) => {
+  await sendEmail({
+    to: email,
+    name: fullName,
+    subject: '👋 Welcome back to EventLink CRM!',
+    html: `
+      <h2 style="color:#6C3FF5;font-size:22px;margin-bottom:8px;">Good to see you again! 🎉</h2>
+      <p style="color:#1A1A2E;font-size:15px;line-height:1.6;">
+        You just logged in to your <strong style="color:#6C3FF5;text-transform:capitalize;">${role}</strong> account.
+      </p>
+      <div style="background:#F0F2FF;border-radius:12px;padding:16px;margin:20px 0;">
+        <p style="color:#6B7280;font-size:14px;margin:0;">
+          Check your dashboard for the latest updates, bookings and notifications.
+        </p>
+      </div>
+    `
+  })
+}
+
+export const sendEventReminderEmails = async ({ attendees, eventTitle, eventDate, venue }) => {
+  for (const attendee of attendees) {
+    await sendEmail({
+      to: attendee.email,
+      name: attendee.full_name,
+      subject: `⏰ Reminder: ${eventTitle} is tomorrow!`,
+      html: `
+        <div style="background:#EDE9FE;border-radius:12px;padding:20px;margin-bottom:20px;text-align:center;">
+          <p style="font-size:40px;margin:0;">⏰</p>
+          <p style="font-weight:800;color:#6C3FF5;font-size:18px;margin:8px 0 0;">Event Reminder</p>
+        </div>
+        <p style="color:#1A1A2E;font-size:15px;line-height:1.6;">
+          Don't forget! <strong>${eventTitle}</strong> is coming up soon.
+        </p>
+        <div style="background:#F8F9FF;border-radius:12px;padding:16px;margin:16px 0;border:1px solid #E8EAFF;">
+          <p style="margin:0 0 8px;font-size:14px;color:#6B7280;">📅 <strong style="color:#1A1A2E;">${eventDate}</strong></p>
+          <p style="margin:0;font-size:14px;color:#6B7280;">📍 <strong style="color:#1A1A2E;">${venue}</strong></p>
+        </div>
+        <p style="color:#6B7280;font-size:14px;">Open the app to view your QR ticket!</p>
+      `
+    })
+  }
+}
+
+export const sendThankYouEmail = async ({ email, fullName, eventTitle }) => {
+  await sendEmail({
+    to: email,
+    name: fullName,
+    subject: `🎉 Thank you for attending ${eventTitle}!`,
+    html: `
+      <div style="background:#D1FAE5;border-radius:12px;padding:20px;margin-bottom:20px;text-align:center;">
+        <p style="font-size:40px;margin:0;">🎉</p>
+        <p style="font-weight:800;color:#065F46;font-size:18px;margin:8px 0 0;">Thank You!</p>
+      </div>
+      <p style="color:#1A1A2E;font-size:15px;line-height:1.6;">
+        Thank you for attending <strong>${eventTitle}</strong>. We hope you had a great time!
+      </p>
+      <div style="background:#F8F9FF;border-radius:12px;padding:16px;margin:16px 0;border:1px solid #E8EAFF;">
+        <p style="color:#6B7280;font-size:14px;margin:0;">
+          Don't forget to check EventLink CRM for more upcoming events and earn more badges!
+        </p>
+      </div>
+    `
+  })
+}
+
+export const sendVenueChangeEmail = async ({ email, fullName, eventTitle, newVenue, newDate }) => {
+  await sendEmail({
+    to: email,
+    name: fullName,
+    subject: `⚠️ Important Update — ${eventTitle}`,
+    html: `
+      <div style="background:#FEF3C7;border-radius:12px;padding:20px;margin-bottom:20px;text-align:center;">
+        <p style="font-size:40px;margin:0;">⚠️</p>
+        <p style="font-weight:800;color:#D97706;font-size:18px;margin:8px 0 0;">Event Update</p>
+      </div>
+      <p style="color:#1A1A2E;font-size:15px;line-height:1.6;">
+        There has been an update to <strong>${eventTitle}</strong>.
+      </p>
+      <div style="background:#F8F9FF;border-radius:12px;padding:16px;margin:16px 0;border:1px solid #E8EAFF;">
+        ${newVenue ? `<p style="margin:0 0 8px;font-size:14px;color:#6B7280;">📍 New Venue: <strong style="color:#1A1A2E;">${newVenue}</strong></p>` : ''}
+        ${newDate ? `<p style="margin:0;font-size:14px;color:#6B7280;">📅 New Date: <strong style="color:#1A1A2E;">${newDate}</strong></p>` : ''}
+      </div>
+      <p style="color:#6B7280;font-size:14px;">Please update your plans accordingly.</p>
+    `
+  })
+}

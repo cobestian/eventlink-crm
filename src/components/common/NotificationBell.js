@@ -103,9 +103,9 @@ const NotificationBell = () => {
 
       {/* Notification list — full screen */}
       {open && !selected && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 1000,
-          background: 'white',
+  <div style={{
+    position: 'fixed', inset: 0, zIndex: 9999,
+    background: 'white',
           maxWidth: 480, margin: '0 auto',
           display: 'flex', flexDirection: 'column'
         }}>
@@ -182,8 +182,8 @@ const NotificationBell = () => {
 
       {/* Single notification full screen view */}
       {selected && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 1000,
+  <div style={{
+    position: 'fixed', inset: 0, zIndex: 9999,
           background: 'white', maxWidth: 480,
           margin: '0 auto', display: 'flex', flexDirection: 'column'
         }}>
