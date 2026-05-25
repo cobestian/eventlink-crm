@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { getOrganizerEvents, getEventAttendees } from '../../services/eventService'
 import { supabase } from '../../config/supabase'
 import toast from 'react-hot-toast'
+import { sendAnnouncementEmail } from '../../services/emailService'
 
 const TEMPLATES = [
   { icon: '📍', label: 'Venue Change', text: 'Important: The venue for this event has changed. Please check the updated location.' },
@@ -73,26 +74,25 @@ const Announcements = () => {
     const { error } = await supabase.from('notifications').insert(notifications)
     if (error) throw error
 
-    // Get attendee emails and log for email sending
+    // Get attendee emails
     const attendeeIds = attendees.map(a => a.attendee_id)
     const { data: profiles } = await supabase
       .from('profiles')
       .select('email, full_name')
       .in('id', attendeeIds)
 
-    // Log emails to be sent
-    const emailLogs = (profiles || []).map(p => ({
-      to_email: p.email,
-      subject: `${title} — ${selectedEventData?.title}`,
-      body: `Dear ${p.full_name},\n\n${message}\n\nEvent: ${selectedEventData?.title}\n\nBest regards,\nEventLink CRM`,
-      status: 'sent'
-    }))
-
-    if (emailLogs.length > 0) {
-      await supabase.from('email_logs').insert(emailLogs)
+    // Send real emails to all attendees
+    for (const p of (profiles || [])) {
+      await sendAnnouncementEmail({
+        email: p.email,
+        name: p.full_name,
+        eventTitle: selectedEventData?.title,
+        title,
+        message
+      })
     }
 
-    toast.success(`📢 Announcement sent to ${attendees.length} attendees via app & email!`)
+    toast.success(`📢 Sent to ${attendees.length} attendees via app & email!`)
     setSent(true)
     setTitle('')
     setMessage('')

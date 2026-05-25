@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { getEvents, rsvpEvent, getAttendeeRsvps } from '../../services/eventService'
 import { addPoints, awardBadge } from '../../services/gamificationService'
 import { initializePayment, savePayment, hasPayedForEvent } from '../../services/paymentService'
+import { sendRsvpConfirmationEmail } from '../../services/emailService'
 import { formatDate, formatTime, getCountdown } from '../../utils/helpers'
 import toast from 'react-hot-toast'
 
@@ -28,13 +29,11 @@ const BrowseEvents = () => {
       const [e, r] = await Promise.all([getEvents(), getAttendeeRsvps(profile.id)])
       setEvents(e || [])
       setMyRsvps(r || [])
-
-      // check which paid events this attendee has paid for
       const paidMap = {}
-      for (const event of (e || [])) {
-        if (event.price > 0) {
-          const paid = await hasPayedForEvent(profile.id, event.id)
-          paidMap[event.id] = paid
+      for (const evt of (e || [])) {
+        if (evt.price > 0) {
+          const paid = await hasPayedForEvent(profile.id, evt.id)
+          paidMap[evt.id] = paid
         }
       }
       setPaidEvents(paidMap)
@@ -49,13 +48,21 @@ const BrowseEvents = () => {
     if (profile) loadData()
   }, [profile, loadData])
 
-  const handleFreeRsvp = async (eventId) => {
-    setProcessing(eventId)
+  const handleFreeRsvp = async (evt) => {
+    setProcessing(evt.id)
     try {
-      await rsvpEvent(profile.id, eventId)
+      const data = await rsvpEvent(profile.id, evt.id)
       await addPoints(profile.id, 10)
       await awardBadge(profile.id, 'first_rsvp')
-      toast.success('Registered! +10 points 🎉')
+      await sendRsvpConfirmationEmail({
+        email: profile.email,
+        name: profile.full_name,
+        eventTitle: evt.title,
+        eventDate: formatDate(evt.event_date),
+        venue: evt.venue,
+        rsvpId: data?.id
+      })
+      toast.success('Registered! +10 points 🎉 Check your email!')
       loadData()
     } catch (err) {
       if (err.message?.includes('duplicate')) toast.error('Already registered')
@@ -65,28 +72,36 @@ const BrowseEvents = () => {
     }
   }
 
-  const handlePaidRsvp = async (event) => {
-    setProcessing(event.id)
+  const handlePaidRsvp = async (evt) => {
+    setProcessing(evt.id)
     try {
       initializePayment({
         email: profile.email,
-        amount: event.price,
-        eventTitle: event.title,
+        amount: evt.price,
+        eventTitle: evt.title,
         onSuccess: async (reference) => {
           try {
             await savePayment({
               attendeeId: profile.id,
-              eventId: event.id,
-              amount: event.price,
+              eventId: evt.id,
+              amount: evt.price,
               reference
             })
-            await rsvpEvent(profile.id, event.id)
+            await rsvpEvent(profile.id, evt.id)
             await addPoints(profile.id, 20)
             await awardBadge(profile.id, 'first_rsvp')
-            toast.success('Payment successful! Ticket confirmed 🎉')
+            await sendRsvpConfirmationEmail({
+              email: profile.email,
+              name: profile.full_name,
+              eventTitle: evt.title,
+              eventDate: formatDate(evt.event_date),
+              venue: evt.venue,
+              rsvpId: reference
+            })
+            toast.success('Payment successful! Ticket confirmed 🎉 Check your email!')
             loadData()
           } catch (err) {
-            toast.error('Payment saved but registration failed. Contact support.')
+            toast.error('Payment saved but registration failed.')
           }
         },
         onClose: () => {
@@ -140,95 +155,87 @@ const BrowseEvents = () => {
               <p>{search ? 'Try a different search' : 'No events available yet'}</p>
             </div>
           </div>
-        ) : filtered.map((event, i) => (
-          <div key={event.id} className="event-card" style={{ marginBottom: 16 }}>
-            <div className="event-card-image" style={{ background: GRADIENTS[i % GRADIENTS.length] }}>
-  {event.cover_url ? (
-    <img src={event.cover_url} alt={event.title}
-      style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
-  ) : null}
+        ) : filtered.map((evt, i) => (
+          <div key={evt.id} className="event-card" style={{ marginBottom: 16 }}>
+            <div className="event-card-image" style={{
+              background: GRADIENTS[i % GRADIENTS.length],
+              position: 'relative', overflow: 'hidden'
+            }}>
+              {evt.cover_url ? (
+                <img src={evt.cover_url} alt={evt.title}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
+              ) : null}
               <div style={{
                 position: 'absolute', bottom: 10, left: 10,
                 background: 'rgba(0,0,0,0.4)', borderRadius: 8,
                 padding: '3px 10px', fontSize: 11, color: 'white', fontWeight: 700
               }}>EVENT</div>
-
-              {/* Price tag */}
               <div style={{
                 position: 'absolute', top: 10, right: 10,
-                background: event.price > 0 ? '#FF6B6B' : '#00C896',
+                background: evt.price > 0 ? '#FF6B6B' : '#00C896',
                 borderRadius: 20, padding: '4px 12px',
                 fontSize: 12, color: 'white', fontWeight: 800
               }}>
-                {event.price > 0 ? `GHS ${event.price}` : 'FREE'}
+                {evt.price > 0 ? `GHS ${evt.price}` : 'FREE'}
               </div>
             </div>
 
             <div className="event-card-body">
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{event.title}</h3>
-              <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 4 }}>📍 {event.venue}</p>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{evt.title}</h3>
+              <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 4 }}>📍 {evt.venue}</p>
               <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 4 }}>
-                📅 {formatDate(event.event_date)} at {formatTime(event.event_date)}
+                📅 {formatDate(evt.event_date)} at {formatTime(evt.event_date)}
               </p>
-              <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 8 }}>👥 Max {event.max_attendees}</p>
+              <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 8 }}>👥 Max {evt.max_attendees}</p>
 
-              {event.description && (
+              {evt.description && (
                 <p style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 10, lineHeight: 1.5 }}>
-                  {event.description?.substring(0, 80)}{event.description?.length > 80 ? '...' : ''}
+                  {evt.description?.substring(0, 80)}{evt.description?.length > 80 ? '...' : ''}
                 </p>
               )}
 
-              <div style={{
-                display: 'flex', justifyContent: 'space-between',
-                alignItems: 'center', marginBottom: 14
-              }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                 <div style={{
                   display: 'inline-block', padding: '4px 12px', borderRadius: 20,
                   background: '#EDE9FE', color: '#6C3FF5', fontSize: 12, fontWeight: 700
-                }}>⏰ {getCountdown(event.event_date)}</div>
-
-                {event.price > 0 && (
+                }}>⏰ {getCountdown(evt.event_date)}</div>
+                {evt.price > 0 && (
                   <div style={{
                     padding: '4px 12px', borderRadius: 20,
-                    background: '#FEE2E2', color: '#FF6B6B',
-                    fontSize: 13, fontWeight: 800
-                  }}>GHS {event.price}</div>
+                    background: '#FEE2E2', color: '#FF6B6B', fontSize: 13, fontWeight: 800
+                  }}>GHS {evt.price}</div>
                 )}
               </div>
 
               <p style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 12 }}>
-                By {event.profiles?.organization_name || event.profiles?.full_name}
+                By {evt.profiles?.organization_name || evt.profiles?.full_name}
               </p>
 
-              {isRegistered(event.id) ? (
+              {isRegistered(evt.id) ? (
                 <div style={{
                   padding: '12px', borderRadius: 12, background: '#D1FAE5',
                   textAlign: 'center', color: '#065F46', fontWeight: 700, fontSize: 14
                 }}>✅ Registered</div>
-              ) : event.price > 0 ? (
-                <div>
-                  {paidEvents[event.id] ? (
-                    <div style={{
-                      padding: '12px', borderRadius: 12, background: '#D1FAE5',
-                      textAlign: 'center', color: '#065F46', fontWeight: 700
-                    }}>✅ Payment confirmed</div>
-                  ) : (
-                    <button
-                      className="btn-primary"
-                      style={{ background: 'linear-gradient(135deg, #FF6B6B, #F59E0B)' }}
-                      disabled={processing === event.id}
-                      onClick={() => handlePaidRsvp(event)}>
-                      {processing === event.id ? 'Processing...' : `Pay GHS ${event.price} & Register 💳`}
-                    </button>
-                  )}
-                </div>
+              ) : evt.price > 0 ? (
+                paidEvents[evt.id] ? (
+                  <div style={{
+                    padding: '12px', borderRadius: 12, background: '#D1FAE5',
+                    textAlign: 'center', color: '#065F46', fontWeight: 700
+                  }}>✅ Payment confirmed</div>
+                ) : (
+                  <button className="btn-primary"
+                    style={{ background: 'linear-gradient(135deg, #FF6B6B, #F59E0B)' }}
+                    disabled={processing === evt.id}
+                    onClick={() => handlePaidRsvp(evt)}>
+                    {processing === evt.id ? 'Processing...' : `Pay GHS ${evt.price} & Register 💳`}
+                  </button>
+                )
               ) : (
-                <button
-                  className="btn-primary"
+                <button className="btn-primary"
                   style={{ background: GRADIENTS[i % GRADIENTS.length] }}
-                  disabled={processing === event.id}
-                  onClick={() => handleFreeRsvp(event.id)}>
-                  {processing === event.id ? 'Registering...' : 'Register Free →'}
+                  disabled={processing === evt.id}
+                  onClick={() => handleFreeRsvp(evt)}>
+                  {processing === evt.id ? 'Registering...' : 'Register Free →'}
                 </button>
               )}
             </div>
