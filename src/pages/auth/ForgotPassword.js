@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../config/supabase'
+import { sendEmail } from '../../services/emailService'
 import toast from 'react-hot-toast'
 
 const ForgotPassword = () => {
@@ -12,12 +13,31 @@ const ForgotPassword = () => {
     e.preventDefault()
     setLoading(true)
     try {
+      // Generate reset link through Supabase
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: 'https://eventlink-crm.vercel.app/reset-password'
       })
       if (error) throw error
+
+      // Also send branded email through Resend
+      await sendEmail({
+        to: email,
+        subject: '🔐 Reset Your EventLink CRM Password',
+        html: `
+          <h2 style="color:#6C3FF5;">Reset Your Password 🔐</h2>
+          <p>We received a request to reset your EventLink CRM password.</p>
+          <p>Check your inbox for a separate email from Supabase with the reset link, or click below if you received a direct link.</p>
+          <div style="background:#F0F2FF;border-radius:12px;padding:16px;margin:20px 0;">
+            <p style="color:#6B7280;font-size:14px;margin:0;">
+              If you did not request a password reset, please ignore this email.
+            </p>
+          </div>
+          <p style="color:#9CA3AF;font-size:12px;">EventLink CRM — Ghana's Event Industry Platform</p>
+        `
+      })
+
       setSent(true)
-      toast.success('Reset link sent to your email!')
+      toast.success('Reset link sent! Check your email.')
     } catch (err) {
       toast.error(err.message || 'Failed to send reset email')
     } finally {
@@ -36,9 +56,7 @@ const ForgotPassword = () => {
           {sent ? 'Check Your Email' : 'Reset Password'}
         </h1>
         <p style={{ opacity: 0.75, marginTop: 6, fontSize: 14 }}>
-          {sent
-            ? `We sent a reset link to ${email}`
-            : 'Enter your email to receive a reset link'}
+          {sent ? `We sent a reset link to ${email}` : 'Enter your email to receive a reset link'}
         </p>
       </div>
 
@@ -50,13 +68,8 @@ const ForgotPassword = () => {
           <form onSubmit={handleSubmit}>
             <div className="input-group">
               <label>Email Address</label>
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-              />
+              <input type="email" placeholder="you@example.com"
+                value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
             <button className="btn-primary" type="submit" disabled={loading}>
               {loading ? 'Sending...' : 'Send Reset Link →'}
@@ -68,13 +81,12 @@ const ForgotPassword = () => {
               background: '#EDE9FE', borderRadius: 20, padding: 24, marginBottom: 24
             }}>
               <p style={{ fontSize: 15, color: '#6C3FF5', fontWeight: 600, lineHeight: 1.6 }}>
-                📧 We sent a password reset link to <strong>{email}</strong>.
-                Click the link in your email to set a new password.
+                📧 Check your email at <strong>{email}</strong> for the password reset link.
+              </p>
+              <p style={{ fontSize: 13, color: '#9CA3AF', marginTop: 8 }}>
+                Also check your spam/junk folder if you don't see it.
               </p>
             </div>
-            <p style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 8 }}>
-              Didn't receive it? Check your spam folder.
-            </p>
             <button onClick={() => setSent(false)} style={{
               background: 'none', border: 'none', color: '#6C3FF5',
               fontSize: 14, fontWeight: 700, cursor: 'pointer'
